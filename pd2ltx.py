@@ -15,10 +15,8 @@ import pandas as pd
 
 def pd2ltx(
     df,
-    caption="",
     sort_column=None,
     sort_ascending=True,
-    nan_replace="-",
     error=None,
     error_suffix=None,
     error_significant_figures=1,
@@ -34,6 +32,17 @@ def pd2ltx(
     columns followed by a chosen suffix. For assymetrical errors the suffix for upper and lower
     bound errors have to have their own suffix (e.g. 'errup' and 'errlo').
 
+    Make sure the dtypes of your columns are set correctly as it will interpret all 'object' type
+    columns as string columns and thus show them as is.
+
+    To stylyse the table you can pass along any keyword accepted by the
+    pandas.io.formats.style.Styler.to_latex() function. Only column_format and siunitx are set by
+    default to column_format with string columns aligned left and value columns center aligned and
+    siunitx set to True to support math operations inside the cells.
+    For example you can pass 'hrules=True' to add \toprule, \midrule and \bottomrule to the table.
+    Or pass 'buf=<file name>' to export the table to a file instead of returning the string or
+    set a caption with the 'caption' keyword.
+
     Parameters
     ----------
     df : Pandas DataFrame
@@ -48,8 +57,6 @@ def pd2ltx(
         If the sort is ascending or descending. This parameter and sort_column are directly
         passed to the pd.DataFrame.sort_values() function, so it supports multiple column sort
         as well.
-    nan_replace : str, optional, default '-'
-        If the table contains Nan's, they will be replaced with this string representation
     error : str, optional
         If you want to show values with error bars, here you indicate what type of errors they are.
         'symmetrical' for symmetrical and 'assymetrical' for assymetrical errors.
@@ -75,33 +82,25 @@ def pd2ltx(
 
     # Check that the input is DataFrame
     assert isinstance(df, pd.DataFrame), "df has to be of type pandas.DataFrame"
-    assert isinstance(nan_replace, str), "nan_replace has to be a str"
     assert isinstance(error_significant_figures, int), "error_significant_figures has to be an int"
 
     # Extract name of columns
     labels = df.columns
 
-    # NaN replacement
-    nan_rep = f"{{{nan_replace}}}"
-
-    # Error suffix
-    if (error == "equal") & (error_suffix is None):
-        error_suffix = " err"
-    if (error == "unequal") & (error_suffix is None):
-        error_suffix = [" err_u", " err_l"]
-
     # Index of string, variable and error columns
     # Get columns whose values are strings
     str_idx = np.nonzero(df.dtypes.values == np.dtype("O"))[0]
     # Get the columns that are errors
-    if error == "equal":
+    if error == "symmetrical":
         err_idx = np.nonzero(labels.str.contains(error_suffix))[0]
-    elif error == "unequal":
+    elif error == "asymmetrical":
         err_idx = np.nonzero(
             labels.str.contains(error_suffix[0]) | labels.str.contains(error_suffix[1])
         )[0]
-    else:
+    elif error is None:
         err_idx = np.array([])
+    else:
+        raise ValueError(f"Unsupported value for 'error': {error}")
 
     # Get the columns with the main values as the inverse group of the other two
     var_idx = np.delete(np.arange(len(labels)), np.concatenate([str_idx, err_idx]))
@@ -110,28 +109,37 @@ def pd2ltx(
     if sort_column is not None:
         df = df.sort_values(by=sort_column, ascending=sort_ascending)
 
+    # Construct LaTeX table DataFrame
     ltdf = df.copy(deep=True)
     for i in range(Nrow):
         for j in var_idx:
-            # TODO replace Nan's by 'nan-replace'
             # Figure out minimum decimal to round to between value and its errors
-            dec = -1 * np.min(
-                np.floor(np.log10(np.abs(df.iloc[i, j : j + 3].astype(float)))).astype("Int8")
-            )
+            if error == "symmetrical":
+                err_cols = np.array([df.loc[i, labels[j] + error_suffix]])
+            elif error == "asymmetrical":
+                err_cols = (
+                    df.loc[i, [labels[j] + error_suffix[c] for c in range(2)]].astype(float).values
+                )
+
+            # Figure out minimum order of magnitude of the errors
+            dec = int(-1 * np.min(np.floor(np.log10(np.abs(err_cols)))))
+
             # Round and convert to strings
             significant_figures = dec + error_significant_figures - 1
-            strval = f"{df.iloc[i, j+0]:.{significant_figures}f}"
-            errup = df.iloc[i, j + 1]
-            errlo = df.iloc[i, j + 2]
-            # TODO Implement equal errors
-            # Check if errup and errlo are within 5% and consider them equal using \pm
-            if np.abs(errup - errlo) / errlo < 0.05:
-                errpm = np.mean([errup, errlo])
+            strval = f"{df.iloc[i, j]:.{significant_figures}f}"
+            if error == "symmetrical":
+                errpm = err_cols[0]
                 strrep = f"${strval}\pm{errpm:.{significant_figures}f}$"
-            else:
-                strerrup = f"{errup:.{significant_figures}f}"
-                strerrlo = f"{errlo:.{significant_figures}f}"
-                strrep = f"${strval}^{{+{strerrup}}}_{{-{strerrlo}}}$"
+            elif error == "asymmetrical":
+                errup, errlo = err_cols
+                # Check if errup and errlo are within 5% and consider them equal using \pm
+                if np.abs(errup - errlo) / errlo < 0.05:
+                    errpm = np.mean([errup, errlo])
+                    strrep = f"${strval}\pm{errpm:.{significant_figures}f}$"
+                else:
+                    strerrup = f"{errup:.{significant_figures}f}"
+                    strerrlo = f"{errlo:.{significant_figures}f}"
+                    strrep = f"${strval}^{{+{strerrup}}}_{{-{strerrlo}}}$"
             ltdf.iloc[i, j] = strrep
     ltdf = ltdf.drop(ltdf.columns[err_idx], axis=1)
 
@@ -142,11 +150,8 @@ def pd2ltx(
     for col in col_arr:
         column_format += col
 
-    latex_table = (
-        ltdf.style.hide(axis="index")
-        .set_caption(caption)
-        .to_latex(siunitx=True, column_format=column_format, **kwargs)
+    latex_table = ltdf.style.hide(axis="index").to_latex(
+        siunitx=True, column_format=column_format, **kwargs
     )
 
-    # TODO Add option to export it to a file, like to_latex() already does
     return latex_table
