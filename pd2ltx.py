@@ -146,9 +146,7 @@ def pd2ltx(
     # Column Format. l for text column, c for numeric columns
     cols_order = np.argsort(np.concatenate([str_idx, var_idx]))
     col_arr = np.array(["l"] * len(str_idx) + ["c"] * len(var_idx))[cols_order]
-    column_format = ""
-    for col in col_arr:
-        column_format += col
+    column_format = "".join(col_arr)
 
     latex_table = ltdf.style.hide(axis="index").to_latex(
         siunitx=True, column_format=column_format, **kwargs
