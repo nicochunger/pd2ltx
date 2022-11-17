@@ -92,8 +92,18 @@ def pd2ltx(
     str_idx = np.nonzero(df.dtypes.values == np.dtype("O"))[0]
     # Get the columns that are errors
     if error == "symmetrical":
+        assert isinstance(
+            error_suffix, str
+        ), "error_suffix has to be of type str \
+                                                with symmetrical errors"
         err_idx = np.nonzero(labels.str.contains(error_suffix))[0]
     elif error == "asymmetrical":
+        assert isinstance(
+            error_suffix, list
+        ), "error_suffix has to be of type list with asymmetrical errors"
+        assert (
+            len(error_suffix) == 2
+        ), "error_suffix has to be of length 2 with upper error and lower error respectively"
         err_idx = np.nonzero(
             labels.str.contains(error_suffix[0]) | labels.str.contains(error_suffix[1])
         )[0]
@@ -107,7 +117,40 @@ def pd2ltx(
 
     # DataFrame: Sort
     if sort_column is not None:
-        df = df.sort_values(by=sort_column, ascending=sort_ascending)
+        df = df.sort_values(by=sort_column, ascending=sort_ascending).reset_index(drop=True)
+
+    def strrep_func(strval, err, precision):
+        sym = isinstance(err, float)
+        if sym:
+            if precision < 0:
+                strrep = f"${strval}\pm{round(errpm, precision):g}$"
+            elif precision > 4:
+                errpm_str = np.format_float_scientific(
+                    round(errpm, precision), unique=True, exp_digits=1, min_digits=1
+                )
+                strrep = f"${strval}\pm{errpm_str}$"
+                # strrep = f"${strval}\pm{errpm:.1e}$"
+            else:
+                strrep = f"${strval}\pm{errpm:.{precision}f}$"
+        else:
+            errup, errlo = err
+            if precision < 0:
+                strerrup = f"{round(errup, precision):g}"
+                strerrlo = f"{round(errlo, precision):g}"
+            elif precision > 4:
+                strerrup = np.format_float_scientific(
+                    round(errup, precision), unique=True, exp_digits=1, min_digits=1
+                )
+                strerrlo = np.format_float_scientific(
+                    round(errlo, precision), unique=True, exp_digits=1, min_digits=1
+                )
+                # strerrup = f"{errup:.1e}"
+                # strerrlo = f"{errlo:.1e}"
+            else:
+                strerrup = f"{errup:.{precision}f}"
+                strerrlo = f"{errlo:.{precision}f}"
+            strrep = f"${strval}^{{+{strerrup}}}_{{-{strerrlo}}}$"
+        return strrep
 
     # Construct LaTeX table DataFrame
     ltdf = df.copy(deep=True)
@@ -125,21 +168,25 @@ def pd2ltx(
             dec = int(-1 * np.min(np.floor(np.log10(np.abs(err_cols)))))
 
             # Round and convert to strings
-            significant_figures = dec + error_significant_figures - 1
-            strval = f"{df.iloc[i, j]:.{significant_figures}f}"
+            precision = dec + error_significant_figures - 1
+            # print(err_cols, dec, precision)
+            if precision < 0:
+                strval = f"{round(df.iloc[i, j], precision):g}"
+            elif precision >= 0:
+                strval = f"{df.iloc[i, j]:.{precision}f}"
+
             if error == "symmetrical":
                 errpm = err_cols[0]
-                strrep = f"${strval}\pm{errpm:.{significant_figures}f}$"
+                strrep = strrep_func(strval, errpm, precision)
             elif error == "asymmetrical":
                 errup, errlo = err_cols
                 # Check if errup and errlo are within 5% and consider them equal using \pm
                 if np.abs(errup - errlo) / errlo < 0.05:
                     errpm = np.mean([errup, errlo])
-                    strrep = f"${strval}\pm{errpm:.{significant_figures}f}$"
+                    strrep = strrep_func(strval, errpm, precision)
                 else:
-                    strerrup = f"{errup:.{significant_figures}f}"
-                    strerrlo = f"{errlo:.{significant_figures}f}"
-                    strrep = f"${strval}^{{+{strerrup}}}_{{-{strerrlo}}}$"
+                    strrep = strrep_func(strval, (errup, errlo), precision)
+
             ltdf.iloc[i, j] = strrep
     ltdf = ltdf.drop(ltdf.columns[err_idx], axis=1)
 
