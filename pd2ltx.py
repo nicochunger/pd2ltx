@@ -24,7 +24,7 @@ def pd2ltx(
 ):
     """
     Function that convert a Pandas DataFrame to a latex table but including useful features
-    realted for values with error bars.
+    related to values with error bars.
     This functions allow to add columns with the errors of your value columns. These errors will be
     formatted to show in latex as $ value \pm error $ for symmetrical errors and as
     $ value ^{+errup}_{-errlo} $ for assymetrical errors.
@@ -47,10 +47,6 @@ def pd2ltx(
     ----------
     df : Pandas DataFrame
         The Pandas DataFrame with the data that want to be shown on a latex table
-    caption : str, tuple, optional
-        If string, the LaTeX table caption included as: \caption{<caption>}.
-        If tuple, i.e (“full caption”, “short caption”), the caption included as:
-        \caption[<caption[1]>]{<caption[0]>}.
     sort_column : str, optional
         On which column the table should be sorted. If not specified, the table is left as is.
     sort_ascending : bool, optional
@@ -59,11 +55,13 @@ def pd2ltx(
         as well.
     error : str, optional
         If you want to show values with error bars, here you indicate what type of errors they are.
-        'symmetrical' for symmetrical and 'assymetrical' for assymetrical errors.
+        'symmetrical' for symmetrical and 'asymetrical' for asymetrical errors.
     error_suffix : str, list, optional
         The suffix that is used to find the corresponding error column for the value columns.
-        A simple string for symmetrical errors, or a list of length 2 with the suffixes of
+        A sigle string for symmetrical errors, or a list of length 2 with the suffixes of
         the upper and lower errors respectively.
+        Example for symmetrical errors: "_err"
+        Example for asymmetrical errors: ["_errup", "_errlo"]
     error_significant_figures: int, default 1
         To how many significant figures should the errors be rounded to.
     **kwargs : dict
