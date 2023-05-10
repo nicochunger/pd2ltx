@@ -1,6 +1,6 @@
 Metadata-Version: 2.1
 Name: pd2ltx
-Version: 0.1.0
+Version: 0.1.1
 Summary: Conversion from pandas DataFrame to LaTeX table with support for error bars.
 Home-page: https://github.com/nicochunger/pd2ltx
 Author: Nicolas Unger
@@ -8,6 +8,7 @@ Author-email: nicolas.unger@unige.ch
 License: UNKNOWN
 Platform: UNKNOWN
 Classifier: Programming Language :: Python :: 3
+Description-Content-Type: text/markdown
 License-File: LICENCE
 
 # pd2ltx
@@ -18,5 +19,7 @@ Please look at the example to understand for it works.
 
 ## Instalation instructions
 
-Run `pip install .` in the local directory of where you downloaded this package
+Simply run the following command in your terminal
+
+`pip install -i https://test.pypi.org/simple/ pd2ltx`
 
