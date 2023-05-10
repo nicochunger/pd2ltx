@@ -1,0 +1,8 @@
+LICENCE
+README.md
+setup.py
+pd2ltx.egg-info/PKG-INFO
+pd2ltx.egg-info/SOURCES.txt
+pd2ltx.egg-info/dependency_links.txt
+pd2ltx.egg-info/requires.txt
+pd2ltx.egg-info/top_level.txt

@@ -6,4 +6,6 @@ Please look at the example to understand for it works.
 
 ## Instalation instructions
 
-Run `pip install .` in the local directory of where you downloaded this package
+Simply run the following command in your terminal
+
+`pip install -i https://test.pypi.org/simple/ pd2ltx`
