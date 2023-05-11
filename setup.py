@@ -7,7 +7,7 @@ setuptools.setup(
     name="pd2ltx",
     author="Nicolas Unger",
     author_email="nicolas.unger@unige.ch",
-    version="0.1.1",
+    version="0.1.2",
     description="Conversion from pandas DataFrame to LaTeX table with support for error bars.",
     long_description=long_description,
     long_description_content_type="text/markdown",
