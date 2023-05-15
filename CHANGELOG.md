@@ -1,5 +1,14 @@
 # CHANGELOG
 
+
+## [0.1.3] - 2023-05-15
+
+### Fixed
+
+- Improved the gitignore by using the github template for python packages
+- Fixed the example notebook
+
+---
 ## [0.1.2] - 2023-05-10
 
 ### Fixed

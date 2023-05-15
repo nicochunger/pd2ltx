@@ -7,7 +7,7 @@ setuptools.setup(
     name="pd2ltx",
     author="Nicolas Unger",
     author_email="nicolas.unger@unige.ch",
-    version="0.1.2",
+    version="0.1.3",
     description="Conversion from pandas DataFrame to LaTeX table with support for error bars.",
     long_description=long_description,
     long_description_content_type="text/markdown",
@@ -16,3 +16,9 @@ setuptools.setup(
     install_requires=["numpy", "pandas"],
     classifiers=["Programming Language :: Python :: 3"],
 )
+
+# Run these to build
+
+# python setup.py sdist bdist_wheel
+
+# twine upload --repository-url https://test.pypi.org/legacy/ dist/*
